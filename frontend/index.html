@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cash Store | Real-money E-Commerce</title>
+  <link rel="stylesheet" href="/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav id="navbar" class="hidden">
+    <div class="nav-container">
+      <div class="logo">💸 Cash Store</div>
+      <div class="nav-links">
+        <a href="#" data-view="dashboard">Dashboard</a>
+        <a href="#" data-view="shop">Shop</a>
+        <a href="#" data-view="history">History</a>
+        <a href="#" id="logout-btn">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="app">
+    <!-- Auth View -->
+    <section id="auth-view" class="view active">
+      <div class="glass-card auth-card">
+        <div class="logo-large">💸 Cash Store</div>
+        <h2 id="auth-title">Welcome Back</h2>
+        <form id="auth-form">
+          <div class="input-group" id="name-group" style="display: none;">
+            <input type="text" id="auth-name" placeholder="Full Name" />
+          </div>
+          <div class="input-group">
+            <input type="email" id="auth-email" placeholder="Email Address" required />
+          </div>
+          <div class="input-group">
+            <input type="password" id="auth-password" placeholder="Password" required />
+          </div>
+          <button type="submit" class="btn-primary" id="auth-submit">Login</button>
+        </form>
+        <p class="auth-toggle">
+          <span id="auth-toggle-text">Don't have an account?</span> 
+          <a href="#" id="auth-toggle-btn">Register here</a>
+        </p>
+        <div id="auth-error" class="error-msg"></div>
+      </div>
+    </section>
+
+    <!-- Dashboard View -->
+    <section id="dashboard-view" class="view hidden">
+      <div class="dashboard-header">
+        <h1>Your Wallet</h1>
+        <div class="balance-card glass-card">
+          <p>Available Balance</p>
+          <h2 id="wallet-balance">$0.00</h2>
+          <div class="wallet-actions">
+            <button class="btn-primary" id="add-funds-btn">Add Funds</button>
+            <button class="btn-secondary" id="withdraw-btn">Withdraw</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="recent-transactions">
+        <h3>Recent Activity</h3>
+        <div class="glass-card table-container">
+          <table id="recent-tx-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="recent-tx-body">
+              <!-- populated by js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Shop View -->
+    <section id="shop-view" class="view hidden">
+      <div class="shop-header">
+        <h1>Shop Latest Drops</h1>
+      </div>
+      <div class="product-grid" id="product-grid">
+        <!-- populated by js -->
+      </div>
+    </section>
+
+    <!-- History View -->
+    <section id="history-view" class="view hidden">
+      <div class="history-header">
+        <h1>Transaction History</h1>
+      </div>
+      <div class="glass-card table-container">
+        <table id="full-tx-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Method</th>
+            </tr>
+          </thead>
+          <tbody id="full-tx-body">
+            <!-- populated by js -->
+          </tbody>
+        </table>
+        <div class="pagination">
+          <button id="prev-page" class="btn-small disabled">Prev</button>
+          <span id="page-info">Page 1</span>
+          <button id="next-page" class="btn-small">Next</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modals -->
+  <!-- Add Funds Modal -->
+  <div id="deposit-modal" class="modal hidden">
+    <div class="modal-content glass-card">
+      <span class="close-modal">&times;</span>
+      <h2>Add Funds to Wallet</h2>
+      <div class="input-group">
+        <label>Amount (USD)</label>
+        <input type="number" id="deposit-amount" min="0.50" step="0.01" value="10.00" />
+      </div>
+      <div class="stripe-element-container">
+        <div id="card-element"></div>
+      </div>
+      <button class="btn-primary" id="submit-deposit">Pay Now</button>
+      <div id="deposit-message" class="message"></div>
+    </div>
+  </div>
+
+  <!-- Withdraw Modal -->
+  <div id="withdraw-modal" class="modal hidden">
+    <div class="modal-content glass-card">
+      <span class="close-modal">&times;</span>
+      <h2>Withdraw Funds</h2>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="paypal">PayPal</button>
+        <button class="tab-btn" data-tab="cashapp">Cash App</button>
+        <button class="tab-btn" data-tab="venmo">Venmo</button>
+        <button class="tab-btn" data-tab="bank">Bank</button>
+      </div>
+      
+      <div class="tab-content">
+        <div class="input-group">
+          <label>Amount (USD)</label>
+          <input type="number" id="withdraw-amount" min="1.00" step="0.01" value="5.00" />
+        </div>
+
+        <div id="tab-paypal" class="tab-pane active">
+          <div class="input-group">
+            <input type="email" id="withdraw-paypal-email" placeholder="PayPal Email" />
+          </div>
+        </div>
+
+        <div id="tab-cashapp" class="tab-pane hidden">
+          <div class="input-group">
+            <input type="text" id="withdraw-cashapp-email" placeholder="$Cashtag@cash.app" />
+          </div>
+        </div>
+
+        <div id="tab-venmo" class="tab-pane hidden">
+          <div class="input-group">
+            <input type="email" id="withdraw-venmo-email" placeholder="Venmo linked Email" />
+          </div>
+        </div>
+
+        <div id="tab-bank" class="tab-pane hidden">
+          <div class="input-group">
+            <input type="text" id="bank-name" placeholder="Account Holder Name" />
+          </div>
+          <div class="input-group">
+            <input type="text" id="bank-routing" placeholder="Routing Number (9 digits)" />
+          </div>
+          <div class="input-group">
+            <input type="text" id="bank-account" placeholder="Account Number" />
+          </div>
+          <div class="input-group">
+            <select id="bank-type">
+              <option value="checking">Checking</option>
+              <option value="savings">Savings</option>
+            </select>
+          </div>
+        </div>
+        
+        <button class="btn-primary" id="submit-withdraw">Confirm Withdrawal</button>
+        <div id="withdraw-message" class="message"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
